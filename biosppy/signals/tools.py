@@ -1152,7 +1152,7 @@ def get_heart_rate(beats=None, sampling_rate=1000., smooth=False, size=3):
         raise TypeError("Please specify the input beat indices.")
 
     if len(beats) < 2:
-        raise ValueError("Not enough beats to compute heart rate.")
+        return utils.ReturnTuple(([], []), ('index', 'heart_rate'))
 
     # compute heart rate
     ts = beats[1:]
