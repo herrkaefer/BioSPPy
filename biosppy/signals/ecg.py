@@ -929,9 +929,7 @@ def hamilton_segmenter(signal=None, sampling_rate=1000.):
     v100ms = int(0.1 * sampling_rate)
     TH_elapsed = np.ceil(0.36 * sampling_rate)
     sm_size = int(0.08 * sampling_rate)
-    init_ecg = 8  # seconds for initialization
-    if dur < init_ecg:
-        init_ecg = int(dur)
+    init_ecg = min(dur, max(8, int(dur/2.)))  # seconds for initialization
 
     # filtering
     filtered, _, _ = st.filter_signal(signal=signal,
