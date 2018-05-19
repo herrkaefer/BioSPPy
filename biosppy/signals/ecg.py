@@ -102,7 +102,7 @@ def ecg(signal=None, sampling_rate=1000., show=True):
     T = (length - 1) / sampling_rate
     ts = np.linspace(0, T, length, endpoint=False)
     ts_hr = ts[hr_idx]
-    ts_tmpl = np.linspace(-0.2, 0.4, templates.shape[1], endpoint=False)
+    ts_tmpl = np.linspace(-0.2, 0.4, int(0.6*sampling_rate), endpoint=False)
 
     # plot
     if show:
