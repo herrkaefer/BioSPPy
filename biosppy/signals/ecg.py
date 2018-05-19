@@ -82,7 +82,7 @@ def ecg(signal=None, sampling_rate=1000., show=True):
     rpeaks, = correct_rpeaks(signal=filtered,
                              rpeaks=rpeaks,
                              sampling_rate=sampling_rate,
-                             tol=0.05)
+                             tol=0.08)
 
     # extract templates
     templates, rpeaks = extract_heartbeats(signal=filtered,
