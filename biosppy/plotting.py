@@ -950,6 +950,8 @@ def plot_ecg(ts=None,
     ax4 = fig.add_subplot(gs[1:5, 1])
 
     ax4.plot(templates_ts, templates.T, 'm', linewidth=MINOR_LW, alpha=0.7)
+    ax4.plot(templates_ts, templates.mean(axis=0), 'g', linewidth=MAJOR_LW,
+             alpha=0.9)
 
     ax4.set_xlabel('Time (s)')
     ax4.set_ylabel('Amplitude')

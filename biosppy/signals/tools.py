@@ -1313,64 +1313,64 @@ def find_intersection(x1=None,
 
 def finite_difference(signal=None, weights=None):
     """Apply the Finite Difference method to compute derivatives.
-    
+
     Parameters
     ----------
     signal : array
         Signal to differentiate.
     weights : list, array
         Finite difference weight coefficients.
-    
+
     Returns
     -------
     index : array
         Indices from `signal` for which the derivative was computed.
     derivative : array
         Computed derivative.
-    
+
     Notes
     -----
     * The method assumes central differences weights.
     * The method accounts for the delay introduced by the method .
-    
+
     Raises
     ------
     ValueError
         If the number of weights is not odd.
-    
+
     """
-    
+
     # check inputs
     if signal is None:
         raise TypeError("Please specify a signal to differentiate.")
-    
+
     if weights is None:
         raise TypeError("Please specify the weight coefficients.")
-    
+
     N = len(weights)
     if N % 2 == 0:
         raise ValueError("Number of weights must be odd.")
-    
+
     # diff
     weights = weights[::-1]
     derivative = ss.lfilter(weights, [1], signal)
-    
+
     # trim delay
     D = N - 1
     D2 = D // 2
-    
+
     index = np.arange(D2, len(signal) - D2, dtype='int')
     derivative = derivative[D:]
-    
+
     return utils.ReturnTuple((index, derivative), ('index', 'derivative'))
 
 
 def _init_dist_profile(m, n, signal):
     """Compute initial time series signal statistics for distance profile.
-    
+
     Implements the algorithm described in [Mueen2014]_, using the notation
     from [Yeh2016_a]_.
-    
+
     Parameters
     ----------
     m : int
@@ -1379,54 +1379,54 @@ def _init_dist_profile(m, n, signal):
         Target signal length.
     signal : array
         Target signal.
-    
+
     Returns
     -------
     X : array
         Fourier Transform (FFT) of the signal.
     sigma : array
         Moving standard deviation in windows of length `m`.
-    
+
     References
     ----------
     .. [Mueen2014] Abdullah Mueen, Hossein Hamooni, "Trilce Estrada: Time
        Series Join on Subsequence Correlation", ICDM 2014: 450-459
     .. [Yeh2016_a] Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova,
        Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego Furtado Silva,
-       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity 
-       Joins for Time Series: A Unifying View that Includes Motifs, Discords 
+       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity
+       Joins for Time Series: A Unifying View that Includes Motifs, Discords
        and Shapelets", IEEE ICDM 2016
-    
+
     """
-    
+
     # compute signal stats
     csumx = np.zeros(n+1, dtype='float')
     csumx[1:] = np.cumsum(signal)
     sumx = csumx[m:] - csumx[:-m]
-    
+
     csumx2 = np.zeros(n+1, dtype='float')
     csumx2[1:] = np.cumsum(np.power(signal, 2))
     sumx2 = csumx2[m:] - csumx2[:-m]
-    
+
     meanx = sumx / m
     sigmax2 = (sumx2 / m) - np.power(meanx, 2)
     sigma = np.sqrt(sigmax2)
-    
+
     # append zeros
     x = np.concatenate((signal, np.zeros(n, dtype='float')))
-    
+
     # compute FFT
     X = np.fft.fft(x)
-    
+
     return X, sigma
 
 
 def _ditance_profile(m, n, query, X, sigma):
     """Compute the distance profile of a query sequence against a signal.
-    
+
     Implements the algorithm described in [Mueen2014]_, using the notation
     from [Yeh2016]_.
-    
+
     Parameters
     ----------
     m : int
@@ -1439,51 +1439,51 @@ def _ditance_profile(m, n, query, X, sigma):
         Target time series Fourier Transform (FFT).
     sigma : array
         Moving standard deviation in windows of length `m`.
-    
+
     Returns
     -------
     dist : array
         Distance profile (squared).
-    
+
     Notes
     -----
     * Computes distances on z-normalized data.
-    
+
     References
     ----------
     .. [Mueen2014] Abdullah Mueen, Hossein Hamooni, "Trilce Estrada: Time
        Series Join on Subsequence Correlation", ICDM 2014: 450-459
     .. [Yeh2016] Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova,
        Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego Furtado Silva,
-       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity 
-       Joins for Time Series: A Unifying View that Includes Motifs, Discords 
+       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity
+       Joins for Time Series: A Unifying View that Includes Motifs, Discords
        and Shapelets", IEEE ICDM 2016
-    
+
     """
-    
+
     # normalize query
     q = (query - np.mean(query)) / np.std(query)
-    
+
     # reverse query and append zeros
     y = np.concatenate((q[::-1], np.zeros(2*n - m, dtype='float')))
-    
+
     # compute dot products fast
     Y = np.fft.fft(y)
     Z = X * Y
     z = np.fft.ifft(Z)
     z = z[m-1:n]
-    
+
     # compute distances (z-normalized squared euclidean distance)
     dist = 2 * m * (1 - z / (m * sigma))
-    
+
     return dist
 
 
 def distance_profile(query=None, signal=None, metric='euclidean'):
     """Compute the distance profile of a query sequence against a signal.
-    
+
     Implements the algorithm described in [Mueen2014]_.
-    
+
     Parameters
     ----------
     query : array
@@ -1493,62 +1493,62 @@ def distance_profile(query=None, signal=None, metric='euclidean'):
     metric : str, optional
         The distance metric to use; one of 'euclidean' or 'pearson'; default
         is 'euclidean'.
-    
+
     Returns
     -------
     dist : array
         Distance of the query sequence to every sub-sequnce in the signal.
-    
+
     Notes
     -----
     * Computes distances on z-normalized data.
-    
+
     References
     ----------
     .. [Mueen2014] Abdullah Mueen, Hossein Hamooni, "Trilce Estrada: Time
        Series Join on Subsequence Correlation", ICDM 2014: 450-459
-    
+
     """
-    
+
     # check inputs
     if query is None:
         raise TypeError("Please specify the input query sequence.")
-    
+
     if signal is None:
         raise TypeError("Please specify the input time series signal.")
-    
+
     if metric not in ['euclidean', 'pearson']:
         raise ValueError("Unknown distance metric.")
-    
+
     # ensure numpy
     query = np.array(query)
     signal = np.array(signal)
-    
+
     m = len(query)
     n = len(signal)
     if m > n/2:
         raise ValueError("Time series signal is too short relative to"
                          " query length.")
-    
+
     # get initial signal stats
     X, sigma = _init_dist_profile(m, n, signal)
-    
+
     # compute distance profile
     dist = _ditance_profile(m, n, query, X, sigma)
-    
+
     if metric == 'pearson':
         dist = 1 - np.abs(dist) / (2 * m)
     elif metric == 'euclidean':
         dist = np.abs(np.sqrt(dist))
-    
+
     return utils.ReturnTuple((dist, ), ('dist', ))
 
 
 def signal_self_join(signal=None, size=None, index=None, limit=None):
     """Compute the matrix profile for a self-similarity join of a time series.
-    
+
     Implements the algorithm described in [Yeh2016_b]_.
-    
+
     Parameters
     ----------
     signal : array
@@ -1561,49 +1561,49 @@ def signal_self_join(signal=None, size=None, index=None, limit=None):
     limit : int, optional
         Upper limit for the number of query sub-sequences; the default is to
         search all sub-sequences.
-    
+
     Returns
     -------
     matrix_index : array
         Matric profile index.
     matrix_profile : array
         Computed matrix profile (distances).
-    
+
     Notes
     -----
     * Computes euclidean distances on z-normalized data.
-    
+
     References
     ----------
     .. [Yeh2016_b] Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova,
        Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego Furtado Silva,
-       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity 
-       Joins for Time Series: A Unifying View that Includes Motifs, Discords 
+       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity
+       Joins for Time Series: A Unifying View that Includes Motifs, Discords
        and Shapelets", IEEE ICDM 2016
-    
+
     """
-    
+
     # check inputs
     if signal is None:
         raise TypeError("Please specify the input time series signal.")
-    
+
     if size is None:
         raise TypeError("Please specify the sub-sequence size.")
-    
+
     # ensure numpy
     signal = np.array(signal)
-    
+
     n = len(signal)
     if size > n/2:
         raise ValueError("Time series signal is too short relative to desired"
                          " sub-sequence length.")
-    
+
     if size < 4:
         raise ValueError("Sub-sequence length must be at least 4.")
-    
+
     # matrix profile length
     nb = n - size + 1
-    
+
     # get search index
     if index is None:
         index = np.random.permutation(np.arange(nb, dtype='int'))
@@ -1611,45 +1611,45 @@ def signal_self_join(signal=None, size=None, index=None, limit=None):
         index = np.array(index)
         if not np.all(index < nb):
             raise ValueError("Provided `index` exceeds allowable sub-sequences.")
-    
+
     # limit search
     if limit is not None:
         if limit < 1:
             raise ValueError("Search limit must be at least 1.")
-        
+
         index = index[:limit]
-    
+
     # exclusion zone (to avoid query self-matches)
     ezone = int(round(size / 4))
-    
+
     # initialization
     matrix_profile = np.inf * np.ones(nb, dtype='float')
     matrix_index = np.zeros(nb, dtype='int')
-    
+
     X, sigma = _init_dist_profile(size, n, signal)
-    
+
     # compute matrix profile
     for idx in index:
         # compute distance profile
         query = signal[idx:idx+size]
         dist = _ditance_profile(size, n, query, X, sigma)
         dist = np.abs(np.sqrt(dist)) # to have euclidean distance
-        
+
         # apply exlusion zone
         a = max([0, idx-ezone])
         b = min([nb, idx+ezone+1])
         dist[a:b] = np.inf
-        
+
         # find nearest neighbors
         pos = dist < matrix_profile
         matrix_profile[pos] = dist[pos]
         matrix_index[pos] = idx
-        
+
         # account for exlusion zone
         neighbor = np.argmin(dist)
         matrix_profile[idx] = dist[neighbor]
         matrix_index[idx] = neighbor
-    
+
     # output
     args = (matrix_index, matrix_profile)
     names = ('matrix_index', 'matrix_profile')
@@ -1663,10 +1663,10 @@ def signal_cross_join(signal1=None,
                       index=None,
                       limit=None):
     """Compute the matrix profile for a similarity join of two time series.
-    
+
     Computes the nearest sub-sequence in `signal2` for each sub-sequence in
     `signal1`. Implements the algorithm described in [Yeh2016_c]_.
-    
+
     Parameters
     ----------
     signal1 : array
@@ -1681,59 +1681,59 @@ def signal_cross_join(signal1=None,
     limit : int, optional
         Upper limit for the number of query sub-sequences; the default is to
         search all sub-sequences.
-    
+
     Returns
     -------
     matrix_index : array
         Matric profile index.
     matrix_profile : array
         Computed matrix profile (distances).
-    
+
     Notes
     -----
     * Computes euclidean distances on z-normalized data.
-    
+
     References
     ----------
     .. [Yeh2016_c] Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova,
        Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego Furtado Silva,
-       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity 
-       Joins for Time Series: A Unifying View that Includes Motifs, Discords 
+       Abdullah Mueen, Eamonn Keogh, "Matrix Profile I: All Pairs Similarity
+       Joins for Time Series: A Unifying View that Includes Motifs, Discords
        and Shapelets", IEEE ICDM 2016
-    
+
     """
-    
+
     # check inputs
     if signal1 is None:
         raise TypeError("Please specify the first input time series signal.")
-    
+
     if signal2 is None:
         raise TypeError("Please specify the second input time series signal.")
-    
+
     if size is None:
         raise TypeError("Please specify the sub-sequence size.")
-    
+
     # ensure numpy
     signal1 = np.array(signal1)
     signal2 = np.array(signal2)
-    
+
     n1 = len(signal1)
     if size > n1/2:
         raise ValueError("First time series signal is too short relative to"
                          " desired sub-sequence length.")
-    
+
     n2 = len(signal2)
     if size > n2/2:
         raise ValueError("Second time series signal is too short relative to"
                          " desired sub-sequence length.")
-    
+
     if size < 4:
         raise ValueError("Sub-sequence length must be at least 4.")
-    
+
     # matrix profile length
     nb1 = n1 - size + 1
     nb2 = n2 - size + 1
-    
+
     # get search index
     if index is None:
         index = np.random.permutation(np.arange(nb2, dtype='int'))
@@ -1742,32 +1742,32 @@ def signal_cross_join(signal1=None,
         if not np.all(index < nb2):
             raise ValueError("Provided `index` exceeds allowable `signal2`"
                              " sub-sequences.")
-    
+
     # limit search
     if limit is not None:
         if limit < 1:
             raise ValueError("Search limit must be at least 1.")
-        
+
         index = index[:limit]
-    
+
     # initialization
     matrix_profile = np.inf * np.ones(nb1, dtype='float')
     matrix_index = np.zeros(nb1, dtype='int')
-    
+
     X, sigma = _init_dist_profile(size, n1, signal1)
-    
+
     # compute matrix profile
     for idx in index:
         # compute distance profile
         query = signal2[idx:idx+size]
         dist = _ditance_profile(size, n1, query, X, sigma)
         dist = np.abs(np.sqrt(dist)) # to have euclidean distance
-        
+
         # find nearest neighbor
         pos = dist <= matrix_profile
         matrix_profile[pos] = dist[pos]
         matrix_index[pos] = idx
-    
+
     # output
     args = (matrix_index, matrix_profile)
     names = ('matrix_index', 'matrix_profile')
@@ -1777,7 +1777,7 @@ def signal_cross_join(signal1=None,
 
 def mean_waves(data=None, size=None, step=None):
     """Extract mean samples from a data set.
-    
+
     Parameters
     ----------
     data : array
@@ -1787,55 +1787,55 @@ def mean_waves(data=None, size=None, step=None):
     step : int, optional
         Number of samples to jump, controlling overlap; default is equal to
         `size` (no overlap).
-    
+
     Returns
     -------
     waves : array
         An k by n array of mean samples.
-    
+
     Notes
     -----
     * Discards trailing samples if they are not enough to satify the `size`
       parameter.
-    
+
     Raises
     ------
     ValueError
         If `step` is an invalid value.
     ValueError
         If there are not enough samples for the given `size`.
-    
+
     """
-    
+
     # check inputs
     if data is None:
         raise TypeError("Please specify an input data set.")
-    
+
     if size is None:
         raise TypeError("Please specify the number of samples for the mean.")
-    
+
     if step is None:
         step = size
-    
+
     if step < 0:
         raise ValueError("The step must be a positive integer.")
-    
+
     # number of waves
     L = len(data) - size
     nb = 1 + L // step
     if nb <= 0:
         raise ValueError("Not enough samples for the given `size`.")
-    
+
     # compute
     waves = [np.mean(data[i:i+size], axis=0) for i in range(0, L+1, step)]
     waves = np.array(waves)
-    
+
     return utils.ReturnTuple((waves, ), ('waves', ))
 
 
 def median_waves(data=None, size=None, step=None):
     """Extract median samples from a data set.
-    
+
     Parameters
     ----------
     data : array
@@ -1845,47 +1845,47 @@ def median_waves(data=None, size=None, step=None):
     step : int, optional
         Number of samples to jump, controlling overlap; default is equal to
         `size` (no overlap).
-    
+
     Returns
     -------
     waves : array
         An k by n array of median samples.
-    
+
     Notes
     -----
     * Discards trailing samples if they are not enough to satify the `size`
       parameter.
-    
+
     Raises
     ------
     ValueError
         If `step` is an invalid value.
     ValueError
         If there are not enough samples for the given `size`.
-    
+
     """
-    
+
     # check inputs
     if data is None:
         raise TypeError("Please specify an input data set.")
-    
+
     if size is None:
         raise TypeError("Please specify the number of samples for the median.")
-    
+
     if step is None:
         step = size
-    
+
     if step < 0:
         raise ValueError("The step must be a positive integer.")
-    
+
     # number of waves
     L = len(data) - size
     nb = 1 + L // step
     if nb <= 0:
         raise ValueError("Not enough samples for the given `size`.")
-    
+
     # compute
     waves = [np.median(data[i:i+size], axis=0) for i in range(0, L+1, step)]
     waves = np.array(waves)
-    
+
     return utils.ReturnTuple((waves, ), ('waves', ))
